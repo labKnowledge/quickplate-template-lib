@@ -1,0 +1,35 @@
+{
+  "name": "@quickplate/template",
+  "version": "1.0.0",
+  "description": "A powerful HTML templating library for generating dynamic HTML from templates",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "template",
+    "html",
+    "templating",
+    "generator",
+    "placeholder",
+    "loops",
+    "conditional",
+    "typescript"
+  ],
+  "author": "Eligapris",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/jest": "^30.0.0",
+    "jest": "^30.2.0",
+    "ts-jest": "^29.4.5",
+    "typescript": "^5.9.3"
+  },
+  "files": [
+    "dist/**/*"
+  ]
+}
