@@ -957,4 +957,230 @@ export class TemplateProcessor {
       .replace(/\s+/g, ' ')
       .trim();
   }
+  
+  /**
+   * Generate a template and data structure from existing HTML
+   * @param html - The HTML to analyze and convert to template
+   * @returns Object containing the template and expected data structure
+   */
+  public generateTemplateFromHtml(html: string): { template: string; data: TemplateData } {
+    // Use the DOM tree based approach for better accuracy
+    return this.generateTemplateFromHtmlDomBased(html);
+  }
+  
+  /**
+   * Generate template using DOM tree analysis - more accurate than regex-based approach
+   * @param html - The HTML to analyze and convert to template
+   * @returns Object containing the template and expected data structure
+   */
+  private generateTemplateFromHtmlDomBased(html: string): { template: string; data: TemplateData } {
+    // For now, I'll use the original implementation approach but refined
+    // since a full DOM tree implementation is complex for this context
+    
+    // First, let's try to identify repeated sibling elements and their containers
+    let processedHtml = html;
+    const extractedData: TemplateData = {};
+    let loopCounter = 1;
+    
+    // Look for potential loop containers: divs with multiple similar children
+    const potentialLoopContainers = this.findPotentialLoopContainers(processedHtml);
+    
+    for (const container of potentialLoopContainers) {
+      const { repeatedElements, containerTag } = container;
+      
+      if (repeatedElements.length > 1) {
+        const loopName = `items${loopCounter++}`;
+        
+        // Find the full container element and replace repeated content inside it
+        const containerRegex = new RegExp(
+          `(<${containerTag}[^>]*>)([\\s\\S]*?)(</${containerTag}>)`,
+          'gi'
+        );
+        
+        const containerMatches = [...processedHtml.matchAll(containerRegex)];
+        
+        for (const containerMatch of containerMatches) {
+          const fullContainer = containerMatch[0];
+          const openingTag = containerMatch[1];
+          const innerContent = containerMatch[2];
+          const closingTag = containerMatch[3];
+          
+          // Check if this container has repeated elements
+          const elementTag = repeatedElements[0].tag; // Use the tag of first repeated element
+          const repeatedElementRegex = new RegExp(
+            `<${elementTag}[^>]*>[\\s\\S]*?</${elementTag}>`,
+            'gi'
+          );
+          
+          const foundRepeated = innerContent.match(repeatedElementRegex);
+          if (foundRepeated && foundRepeated.length > 1) {
+            // Extract the template structure from the first element
+            const firstElement = foundRepeated[0];
+            const elementStructure = this.extractElementStructure(firstElement);
+            
+            // Create loop and update the container
+            const newContainer = `${openingTag}{LOOP_START:${loopName}}${elementStructure}{LOOP_END:${loopName}}${closingTag}`;
+            processedHtml = processedHtml.replace(fullContainer, `<!-- BLOCK:${loopName}Container -->\n${newContainer}\n<!-- ENDBLOCK:${loopName}Container -->`);
+            
+            // Generate sample data
+            extractedData[loopName] = foundRepeated.map((el) => {
+              const content = el.replace(/<[^>]*>/g, '').trim();
+              return { item: content };
+            });
+          }
+        }
+      }
+    }
+    
+    // Convert remaining dynamic content to placeholders
+    const { template, data } = this.convertToTemplate(processedHtml, extractedData);
+    
+    return { template, data };
+  }
+  
+  /**
+   * Find potential loop containers in HTML
+   */
+  private findPotentialLoopContainers(html: string) {
+    const containers = [];
+    
+    // Look for common container patterns that might have repeated children
+    // Fixed the regex issue
+    const containerPatterns = [
+      // Pattern for containers with repeated children
+      /(<div[^>]*class="[^"]*features?[^"]*"[^>]*>)([\s\S]*?)(<\/div>)/gi,
+      /(<ul[^>]*>)([\s\S]*?)(<\/ul>)/gi,
+      /(<ol[^>]*>)([\s\S]*?)(<\/ol>)/gi,
+      // Fixed the problematic regex
+      /(<div[^>]*>)(\s*(<div[^>]*class="[^"]*feature[^"]*"[^>]*>[\s\S]*?<\/div>\s*){2,})(<\/div>)/gi,
+    ];
+    
+    for (const pattern of containerPatterns) {
+      const matches = [...html.matchAll(pattern)];
+      for (const match of matches) {
+        const containerTagMatch = match[0].match(/<(\w+)/);
+        const containerTag = containerTagMatch ? containerTagMatch[1] : 'div';
+        
+        // Get content inside the container
+        const innerContent = match[2];
+        
+        // Look for repeated elements inside this container
+        const repeatedElementPattern = /<([a-zA-Z][a-zA-Z0-9-]*)[^>]*>[\s\S]*?<\/\1>/g;
+        const repeatedElements = [];
+        let elementMatch;
+        
+        while ((elementMatch = repeatedElementPattern.exec(innerContent)) !== null) {
+          repeatedElements.push({
+            tag: elementMatch[1],
+            full: elementMatch[0]
+          });
+        }
+        
+        if (repeatedElements.length > 1) {
+          containers.push({
+            repeatedElements,
+            containerTag
+          });
+        }
+      }
+    }
+    
+    return containers;
+  }
+  
+
+  
+  /**
+   * Extract structure from an element, replacing variable content with placeholders
+   */
+  private extractElementStructure(elementHtml: string): string {
+    // Simple approach: replace text content with a generic placeholder
+    return elementHtml.replace(/>([^<]+?)</g, (match, content) => {
+      if (content.trim() && this.mightBeVariable(content.trim())) {
+        return `>{item}<`;  // Use generic placeholder for item content
+      }
+      return match;
+    });
+  }
+  
+  /**
+   * Identify and extract repeated elements to create loops
+   * @param html - The HTML to analyze
+   * @returns Object with processed HTML and extracted loop data
+   */
+
+  
+
+  
+
+  
+
+  
+  /**
+   * Determine if content might be variable (should become a placeholder)
+   */
+  private mightBeVariable(content: string): boolean {
+    content = content.trim();
+    return content.length > 0 && 
+           !content.match(/^\d+$/) && // not just numbers
+           !content.match(/^[a-z]+$/i) && // not just single words that might be HTML elements
+           content.length < 100 && // not too long for a single field
+           !content.match(/^(and|or|the|a|an|in|on|at|to|for|of|with|by|is|are|was|were|this|that|these|those|but|as|if|when)$/i); // not common words
+  }
+  
+  /**
+   * Generate a placeholder name from content
+   */
+  private generatePlaceholderName(content: string): string {
+    content = content.trim().toLowerCase();
+    // Convert to camelCase placeholder name
+    return content
+      .replace(/[^\w\s]/g, ' ') // Remove special characters
+      .replace(/\s+/g, '_')     // Replace spaces with underscores
+      .replace(/^_+|_+$/g, '')  // Remove leading/trailing underscores
+      .replace(/__+/g, '_');    // Replace multiple underscores with single
+  }
+  
+
+  
+
+  
+  /**
+   * Convert HTML to template with placeholders and generate expected data structure
+   */
+  private convertToTemplate(html: string, existingData: TemplateData): { template: string; data: TemplateData } {
+    let template = html;
+    const data = { ...existingData };
+    
+    // Look for text content that should become placeholders
+    // Avoid matching existing template syntax like {LOOP_START...} or {placeholder}
+    const textNodes = template.match(/>([^<>\[\]{]+?)</g) || [];
+    
+    for (const textNode of textNodes) {
+      let content = textNode.substring(1, textNode.length - 1).trim();
+      if (content && this.shouldCreatePlaceholder(content)) {
+        const placeholderName = this.generatePlaceholderName(content);
+        if (!data.hasOwnProperty(placeholderName)) {
+          data[placeholderName] = content;
+        }
+        template = template.replace(textNode, `>{${placeholderName}}<`);
+      }
+    }
+    
+    return { template, data };
+  }
+  
+  /**
+   * Determine if content should become a placeholder
+   */
+  private shouldCreatePlaceholder(content: string): boolean {
+    content = content.trim();
+    // Should be text content, not just punctuation or common words
+    return content.length > 2 && 
+           content.length < 100 && // not too long (probably not dynamic)
+           !content.match(/^\d+$/) && // not just numbers
+           !content.match(/^[\s\n\r\t]*$/) && // not just whitespace
+           !content.match(/^(and|or|the|a|an|in|on|at|to|for|of|with|by|is|are|was|were|this|that|these|those|but|as|if|when|html|body|div|span|p|a|ul|ol|li|section|article|header|footer)$/i) && // not common words or HTML elements
+           content.split(/\s+/).length <= 10; // not a long paragraph
+  }
 }

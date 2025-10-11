@@ -11,6 +11,7 @@ QuickPlate Template Library is a flexible HTML templating solution that allows d
 - **Special Field Processing**: Enhanced handling for specific fields like `stars` and `addContact`
 - **Layout Reordering**: Dynamically reorder template sections using `<!-- BLOCK:name -->...<!-- ENDBLOCK:name -->` and `layoutOrder` data property
 - **Block Swapping**: Swap template blocks with `{SWAP:block1:block2}` directive or `swaps` data property
+- **HTML-to-Template Conversion**: Generate templates and expected data structures from existing HTML (`generateTemplateFromHtml`)
 - **Advanced Export Options**: Convert processed templates to multiple formats (HTML, Markdown, Text, AST for component conversion)
 - **AST Export**: Get Abstract Syntax Tree representation for easy conversion to React/Next.js components or PDF formats
 - **React Integration Ready**: AST format makes conversion to React components straightforward
