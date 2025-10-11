@@ -1,151 +1,101 @@
-# @quickplate/template
+# QuickPlate Template Library
 
-A powerful HTML templating library for generating dynamic HTML from templates with support for placeholders, loops, conditional sections, and more.
+QuickPlate Template Library is a flexible HTML templating solution that allows developers to create dynamic HTML from templates using placeholder replacement, loops, and conditional sections. The library is designed to work with generic templates regardless of their structure, making it ideal for use in applications where the template format is unknown ahead of time.
 
 ## Features
 
-- **Placeholder replacement**: Replace `{placeholder}` with actual values from your data
-- **Loop processing**: Generate repeated content with `{LOOP_START:name}` and `{LOOP_END:name}`
-- **Conditional sections**: Automatically remove sections based on data availability using comment markers
-- **HTML escaping**: Prevent XSS by automatically escaping HTML in values
-- **Flexible options**: Customize behavior with various options
-- **TypeScript support**: Full type definitions included
+- **Generic Template Support**: Works with any HTML template structure
+- **Placeholder Replacement**: Replace `{key}` placeholders with data values
+- **Loop Processing**: Process arrays with `{LOOP_START:name}...{LOOP_END:name}` syntax  
+- **Conditional Sections**: Automatically remove empty sections based on data availability
+- **Special Field Processing**: Enhanced handling for specific fields like `stars` and `addContact`
+- **Automatic HTML Escaping**: Prevents XSS vulnerabilities
+- **Configurable**: Customize behavior with options
+- **TypeScript Support**: Full TypeScript definitions included
 
 ## Installation
 
 ```bash
 npm install @quickplate/template
-# or
-yarn add @quickplate/template
 ```
 
-## Usage
-
-### Basic Usage
+## Quick Start
 
 ```typescript
 import { TemplateProcessor } from '@quickplate/template';
 
+// Create a processor instance
 const processor = new TemplateProcessor();
 
+// Define your template with placeholders
 const template = `
-  <h1>Hello {name}!</h1>
-  <p>You are {age} years old.</p>
-`;
-
-const data = {
-  name: 'John Doe',
-  age: 30
-};
-
-const result = processor.process(template, data);
-// Output: <h1>Hello John Doe!</h1><p>You are 30 years old.</p>
-```
-
-### Loops
-
-```typescript
-const template = `
-  <ul>
-    {LOOP_START:items}
-      <li>{name}: {value}</li>
-    {LOOP_END:items}
-  </ul>
-`;
-
-const data = {
-  items: [
-    { name: 'Apple', value: 5 },
-    { name: 'Orange', value: 3 }
-  ]
-};
-
-const result = processor.process(template, data);
-// Output: 
-// <ul>
-//   <li>Apple: 5</li>
-//   <li>Orange: 3</li>
-// </ul>
-```
-
-### Conditional Sections
-
-```typescript
-const template = `
-  <div>
-    <!-- About Me section -->
-    <div class="about-me">About: {aboutMeText}</div>
-    <!-- EndAbout Me section -->
+  <div class="profile">
+    <h1>{firstName} {lastName}</h1>
+    <p>Email: {email}</p>
     
-    <!-- Skills section -->
-    <div class="skills">
-      {LOOP_START:skills}
-        <span class="skill">{name}</span>
-      {LOOP_END:skills}
+    <!-- Reviews section -->
+    <div class="reviews">
+      {LOOP_START:reviews}
+        <div class="review">
+          <h3>{name}</h3>
+          <div class="stars">{stars}</div>
+          <p>{comment}</p>
+        </div>
+      {LOOP_END:reviews}
     </div>
-    <!-- EndSkills section -->
+    <!-- EndReviews section -->
   </div>
 `;
 
-const dataWithContent = {
-  aboutMeText: 'Software developer',
-  skills: [{ name: 'JavaScript' }, { name: 'TypeScript' }]
+// Define the data
+const data = {
+  firstName: 'John',
+  lastName: 'Doe',
+  email: 'john@example.com',
+  reviews: [
+    { name: 'Jane Smith', stars: 5, comment: 'Great service!' },
+    { name: 'Bob Johnson', stars: 4, comment: 'Professional work.' }
+  ]
 };
 
-const result = processor.process(template, dataWithContent);
-// Output: sections with content remain, comment markers removed
-
-const dataWithoutSkills = {
-  aboutMeText: 'Software developer'
-  // skills array is missing or empty
-};
-
-const result2 = processor.process(template, dataWithoutSkills);
-// Output: skills section is completely removed
+// Process the template
+const result = processor.process(template, data);
+console.log(result);
 ```
 
-### Advanced Options
+## Documentation
 
-```typescript
-const processor = new TemplateProcessor({
-  removeEmptySections: true,    // Remove sections with no content (default: true)
-  processLoops: true,           // Process loop structures (default: true)
-  processPlaceholders: true,    // Process placeholders (default: true)
-  delimiters: ['{', '}']        // Custom delimiters (default: ['{', '}'])
-});
-```
+For complete documentation, visit:
+- [Getting Started](./docs/getting-started.md)
+- [Installation](./docs/installation.md) 
+- [Core Concepts](./docs/core-concepts.md)
+- [API Reference](./docs/api-reference.md)
+- [Advanced Features](./docs/advanced-features.md)
+- [Best Practices](./docs/best-practices.md)
+- [Examples](./docs/examples.md)
 
-## API
+## Special Field Processing
 
-### TemplateProcessor
+The library provides special handling for specific fields:
 
-#### constructor(options?: TemplateOptions)
+### stars
+Converts numeric values to 5-star rating display:
+- `{stars: 4}` becomes `★★★★☆`
+- `{stars: 2}` becomes `★★☆☆☆`
 
-Create a new template processor with optional configuration.
+### addContact
+Automatically adds vCard prefix for contact information:
+- `{addContact: 'VCARD_DATA'}` becomes `data:text/vcard;charset=utf-8,ENCODED_VCARD_DATA`
 
-#### process(template: string, data: TemplateData): string
+## Compatibility
 
-Process a template with the provided data and return the result.
+- Node.js v12 or higher
+- Works with both JavaScript and TypeScript
+- Browser environments (with bundler)
 
-### TemplateOptions
+## Contributing
 
-```typescript
-interface TemplateOptions {
-  removeEmptySections?: boolean;  // Whether to remove empty sections
-  processLoops?: boolean;         // Whether to process loops
-  processPlaceholders?: boolean;  // Whether to process placeholders
-  delimiters?: [string, string];  // Custom placeholder delimiters
-}
-```
-
-## Use Cases
-
-This library is perfect for:
-- Generating HTML emails
-- Creating dynamic web pages from templates
-- Building static site generators
-- Processing form data into HTML
-- Converting template data to full HTML documents
+We welcome contributions! Please see our [Contributing Guidelines](./CONTRIBUTING.md) for more details.
 
 ## License
 
