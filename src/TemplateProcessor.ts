@@ -100,12 +100,47 @@ export class TemplateProcessor {
     
     return template.replace(regex, (match, placeholder) => {
       if (data.hasOwnProperty(placeholder)) {
-        return this.escapeHtml(data[placeholder]);
+        // Handle special cases like addContact and stars
+        return this.processSpecialPlaceholder(data[placeholder], placeholder);
       } else {
         // If the placeholder doesn't exist in data, return the original placeholder
         return match;
       }
     });
+  }
+
+  /**
+   * Process special placeholders that require custom formatting
+   * @param value - The value to process
+   * @param placeholder - The name of the placeholder
+   * @returns The processed value
+   */
+  private processSpecialPlaceholder(value: any, placeholder: string): string {
+    switch (placeholder) {
+      case 'addContact':
+        // Special handling for vCard contact: add data:text/vcard prefix
+        return `data:text/vcard;charset=utf-8,${encodeURIComponent(value || '')}`;
+      case 'stars':
+        // Convert numeric value to repeated star characters (filled and empty stars)
+        let numericValue;
+        if (typeof value === 'string') {
+          numericValue = parseFloat(value);
+        } else if (typeof value === 'number') {
+          numericValue = value;
+        } else {
+          numericValue = NaN;
+        }
+        
+        if (typeof numericValue === 'number' && !isNaN(numericValue) && numericValue >= 0) {
+          const filledStars = Math.min(5, Math.max(0, Math.floor(numericValue)));
+          const emptyStars = 5 - filledStars;
+          return '★'.repeat(filledStars) + '☆'.repeat(emptyStars);
+        }
+        // Default to all filled stars for invalid values
+        return '★★★★★';
+      default:
+        return this.escapeHtml(value);
+    }
   }
   
   /**
@@ -171,13 +206,15 @@ export class TemplateProcessor {
         if (placeholder.endsWith('Url') || placeholder.includes('image') || placeholder.includes('photo')) {
           return this.processImageUrl(item[placeholder]);
         }
-        return this.escapeHtml(item[placeholder]);
+        // Handle special placeholders (addContact, stars, etc.)
+        return this.processSpecialPlaceholder(item[placeholder], placeholder);
       } else if (globalData.hasOwnProperty(placeholder)) {
         // If not found in item, try to use global data
         if (placeholder.endsWith('Url') || placeholder.includes('image') || placeholder.includes('photo')) {
           return this.processImageUrl(globalData[placeholder]);
         }
-        return this.escapeHtml(globalData[placeholder]);
+        // Handle special placeholders (addContact, stars, etc.)
+        return this.processSpecialPlaceholder(globalData[placeholder], placeholder);
       } else {
         return match;
       }
@@ -465,6 +502,166 @@ export class TemplateProcessor {
     // Remove excessive whitespace at the end
     result = result.replace(/\s+$/, '');
     
+    return result;
+  }
+  
+  /**
+   * Alternative function that uses a more flexible approach with configurable rules
+   * 
+   * @param template - The HTML template content
+   * @param data - The form data array containing user inputs
+   * @returns The cleaned template with empty sections removed
+   */
+  public cleanupContentTemplateAdvanced(template: string, data: TemplateData): string {
+    // Define cleanup rules - more flexible and configurable
+    interface SectionRule {
+      condition: string;
+      pattern: RegExp;
+      check_array?: boolean;
+    }
+    
+    interface ElementRule {
+      condition: string;
+      pattern: RegExp;
+    }
+    
+    const cleanupRules = {
+      // Section-based cleanup
+      sections: {
+        aboutMe: {
+          condition: 'aboutMeText',
+          pattern: /<!-- About Me section -->.*?<!-- EndAbout Me section -->/s
+        } as SectionRule,
+        services: {
+          condition: 'service',
+          pattern: /<!-- Services section -->.*?<!-- EndServices section -->/s
+        } as SectionRule,
+        reviews: {
+          condition: 'reviews',
+          pattern: /<!-- Reviews section -->.*?<!-- EndReviews section -->/s,
+          check_array: true
+        } as SectionRule,
+        buttons: {
+          condition: 'customButtons',
+          pattern: /<!-- Buttons section -->.*?<!-- EndButtons section -->/s,
+          check_array: true
+        } as SectionRule,
+        logo: {
+          condition: 'businessLogoUrl',
+          pattern: /<!-- Logo section -->.*?<!-- EndLogo section -->/s
+        } as SectionRule
+      },
+
+      // Individual element cleanup
+      elements: {
+        phone: {
+          condition: 'phone',
+          pattern: /<p[^>]*class="[^"]*phone[^"]*"[^>]*>.*?<\/p>/s
+        } as ElementRule,
+        website: {
+          condition: 'website',
+          pattern: /<p[^>]*class="[^"]*website[^"]*"[^>]*>.*?<\/p>/s
+        } as ElementRule,
+        address: {
+          condition: 'address',
+          pattern: /<p[^>]*class="[^"]*address[^"]*"[^>]*>.*?<\/p>/s
+        } as ElementRule,
+        title: {
+          condition: 'title',
+          pattern: /<p[^>]*id=["']title["'][^>]*>.*?<\/p>/s
+        } as ElementRule
+      },
+
+      // Social media cleanup
+      social_media: {
+        instagramLink: 'instagram',
+        tikTokLink: 'tiktok',
+        facebookLink: 'facebook',
+        linkedInLink: 'linkedin',
+        dribbbleLink: 'dribbble',
+        youtubeLink: 'youtube',
+        slackLink: 'slack',
+        vimeoLink: 'vimeo',
+        emailLink: 'email',
+        callLink: 'call',
+        textLink: 'sms'
+      } as Record<string, string>
+    };
+
+    let result = template;
+
+    // Process section cleanup
+    for (const [_sectionName, rule] of Object.entries(cleanupRules.sections)) {
+      let shouldRemove = false;
+
+      if (rule.check_array && rule.check_array === true) {
+        const sectionData = data[rule.condition];
+        shouldRemove = !sectionData || 
+                      !Array.isArray(sectionData) || 
+                      sectionData.length === 0;
+      } else {
+        shouldRemove = !data[rule.condition] || 
+                      data[rule.condition] === '' || 
+                      data[rule.condition] === null || 
+                      data[rule.condition] === undefined;
+      }
+
+      if (shouldRemove) {
+        result = result.replace(rule.pattern, '');
+      }
+    }
+
+    // Process element cleanup
+    for (const [_elementName, rule] of Object.entries(cleanupRules.elements)) {
+      const conditionValue = data[rule.condition];
+      if (!conditionValue || conditionValue === '' || conditionValue === null || conditionValue === undefined) {
+        result = result.replace(rule.pattern, '');
+      }
+    }
+
+    // Process social media cleanup
+    for (const [field, id] of Object.entries(cleanupRules.social_media)) {
+      const fieldValue = data[field] || '';
+      if (!fieldValue || fieldValue.trim() === '') {
+        // Remove the specific social media icon/element
+        // This looks for anchor tags with the specific id or href containing the field value
+        const regex = new RegExp(`<a[^>]*href=["']\\{${field}\\}["'][^>]*>.*?<\\/a>|<[^>]*id=["']${id}["'][^>]*>.*?<\\/[^>]*>`, 'gs');
+        result = result.replace(regex, '');
+      }
+    }
+
+    // Remove Socials Extra section if no extra social media links
+    const extraSocialFields = ['youtubeLink', 'slackLink', 'vimeoLink'];
+    let hasExtraSocials = false;
+    for (const field of extraSocialFields) {
+      if (data[field] && data[field].trim() !== '') {
+        hasExtraSocials = true;
+        break;
+      }
+    }
+
+    if (!hasExtraSocials) {
+      result = result.replace(/<!-- Socials Extra section -->.*?<!-- EndSocials Extra section -->/s, '');
+    }
+
+    // Remove main Socials section if no social media links at all
+    const mainSocialFields = ['instagramLink', 'tikTokLink', 'facebookLink', 'linkedInLink', 'dribbbleLink'];
+    let hasMainSocials = false;
+    for (const field of mainSocialFields) {
+      if (data[field] && data[field].trim() !== '') {
+        hasMainSocials = true;
+        break;
+      }
+    }
+
+    if (!hasMainSocials) {
+      result = result.replace(/<!-- Socials section -->.*?<!-- EndSocials section -->/s, '');
+    }
+
+    // Clean up whitespace
+    result = result.replace(/\n\s*\n\s*\n/g, "\n\n");
+    result = result.replace(/\s+$/, '');
+
     return result;
   }
 }

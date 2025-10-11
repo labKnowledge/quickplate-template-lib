@@ -27,7 +27,7 @@ const loopTemplate = `
     <h2>Products</h2>
     <ul>
       {LOOP_START:products}
-        <li class="product">{name} - ${price}</li>
+        <li class="product">{name} - {price}</li>
       {LOOP_END:products}
     </ul>
   </div>

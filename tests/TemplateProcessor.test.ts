@@ -274,6 +274,100 @@ describe('TemplateProcessor', () => {
     });
   });
 
+  describe('Special placeholder handling', () => {
+    test('should handle addContact with vcard prefix', () => {
+      const template = '<a href="{addContact}">Contact</a>';
+      const data: TemplateData = { addContact: 'BEGIN:VCARD...END:VCARD' };
+      const result = processor.process(template, data);
+      
+      expect(result).toBe('<a href="data:text/vcard;charset=utf-8,BEGIN%3AVCARD...END%3AVCARD">Contact</a>');
+    });
+    
+    test('should handle stars with repeat functionality', () => {
+      const template = '<div class="stars">{stars}</div>';
+      
+      // Test with number value (5 stars = all filled)
+      let data: TemplateData = { stars: 5 };
+      let result = processor.process(template, data);
+      expect(result).toBe('<div class="stars">★★★★★</div>');
+      
+      // Test with partial stars (3 stars = 3 filled, 2 empty)
+      data = { stars: 3 };
+      result = processor.process(template, data);
+      expect(result).toBe('<div class="stars">★★★☆☆</div>');
+      
+      // Test with string value (3 stars = 3 filled, 2 empty)
+      data = { stars: '3' };
+      result = processor.process(template, data);
+      expect(result).toBe('<div class="stars">★★★☆☆</div>');
+      
+      // Test with 0 stars
+      data = { stars: 0 };
+      result = processor.process(template, data);
+      expect(result).toBe('<div class="stars">☆☆☆☆☆</div>');
+      
+      // Test with invalid value (defaults to all filled)
+      data = { stars: 'invalid' };
+      result = processor.process(template, data);
+      expect(result).toBe('<div class="stars">★★★★★</div>');
+    });
+  });
+
+  describe('Advanced cleanup functionality', () => {
+    test('should remove sections with empty content using advanced cleanup', () => {
+      const template = `
+        <div>
+          <!-- About Me section -->
+          <div class="about-me"></div>
+          <!-- EndAbout Me section -->
+          <p>Content</p>
+        </div>
+      `;
+      const data: TemplateData = { aboutMeText: '' };
+      const result = processor.cleanupContentTemplateAdvanced(template, data);
+      
+      expect(result).not.toContain('<!-- About Me section -->');
+      expect(result).not.toContain('<!-- EndAbout Me section -->');
+    });
+    
+    test('should remove social media links with empty data using advanced cleanup', () => {
+      const template = `
+        <div>
+          <a href="" id="instagram">Instagram</a>
+          <a href="https://facebook.com/test" id="facebook">Facebook</a>
+          <p>Content</p>
+        </div>
+      `;
+      const data: TemplateData = { 
+        instagramLink: '', 
+        facebookLink: 'https://facebook.com/test'
+      };
+      const result = processor.cleanupContentTemplateAdvanced(template, data);
+      
+      expect(result).not.toContain('id="instagram"');
+      expect(result).toContain('https://facebook.com/test');
+      expect(result).toContain('Facebook');
+    });
+    
+    test('should remove empty contact fields using advanced cleanup', () => {
+      const template = `
+        <div>
+          <p class="phone"></p>
+          <p class="website">https://example.com</p>
+          <p>Content</p>
+        </div>
+      `;
+      const data: TemplateData = { 
+        phone: '', 
+        website: 'https://example.com'
+      };
+      const result = processor.cleanupContentTemplateAdvanced(template, data);
+      
+      expect(result).not.toContain('class="phone"');
+      expect(result).toContain('https://example.com');
+    });
+  });
+
   describe('Options', () => {
     test('should respect removeEmptySections option', () => {
       const template = `
