@@ -75,6 +75,9 @@ export class TemplateProcessor {
     // Process advanced structures (nested loops, conditional elements)
     processedTemplate = this.processAdvancedStructures(processedTemplate, data);
     
+    // Process layout reordering/swapping after placeholder replacement
+    processedTemplate = this.processLayoutReordering(processedTemplate, data);
+    
     // Remove empty sections after all processing
     if (this.options.removeEmptySections) {
       processedTemplate = this.removeEmptySections(processedTemplate, data);
@@ -663,5 +666,295 @@ export class TemplateProcessor {
     result = result.replace(/\s+$/, '');
 
     return result;
+  }
+  
+  /**
+   * Process layout reordering/swapping based on template blocks
+   * @param template - The template string
+   * @param data - The data object
+   * @returns The template with reordered blocks
+   */
+  private processLayoutReordering(template: string, data: TemplateData): string {
+    let result = template;
+    
+    // Handle inline swap directives first: {SWAP:block1:block2}
+    // Find all block definitions first
+    const blockRegex = /<!--\s*BLOCK:(\w+)\s*-->([\s\S]*?)<!--\s*ENDBLOCK:\1\s*-->/g;
+    const inlineSwapRegex = /{SWAP:(\w+):(\w+)}/g;
+    
+    // Extract all blocks with their content
+    const blocks: Record<string, string> = {};
+    let blockMatch;
+    const originalBlocks: { [key: string]: string } = {};
+    const blockPositions: { [key: string]: number } = {};
+    let position = 0;
+    
+    // Create a copy to work with
+    let workingTemplate = result;
+    
+    // Extract blocks and store their original content
+    while ((blockMatch = blockRegex.exec(workingTemplate)) !== null) {
+      const blockName = blockMatch[1];
+      const blockContent = blockMatch[2];
+      blocks[blockName] = blockContent;
+      originalBlocks[blockName] = blockMatch[0];
+      blockPositions[blockName] = position++;
+    }
+    
+    // Process inline swaps if any exist
+    const swapMatches = [...workingTemplate.matchAll(inlineSwapRegex)];
+    if (swapMatches.length > 0) {
+      for (const swapMatch of swapMatches) {
+        const [, block1, block2] = swapMatch;
+        if (blocks[block1] && blocks[block2]) {
+          // Swap the content
+          const temp = blocks[block1];
+          blocks[block1] = blocks[block2];
+          blocks[block2] = temp;
+        }
+      }
+      // Remove swap directives
+      workingTemplate = workingTemplate.replace(inlineSwapRegex, '');
+    }
+    
+    // Process configured swaps from data
+    if (data['swaps'] && Array.isArray(data['swaps'])) {
+      for (const swap of data['swaps'] as Array<{from: string, to: string}>) {
+        if (blocks[swap.from] && blocks[swap.to]) {
+          const temp = blocks[swap.from];
+          blocks[swap.from] = blocks[swap.to];
+          blocks[swap.to] = temp;
+        }
+      }
+    }
+    
+    // Process layout reordering
+    if (data['layoutOrder'] && Array.isArray(data['layoutOrder'])) {
+      const order = data['layoutOrder'] as string[];
+      
+      // Create the reordered content by concatenating blocks in the specified order
+      let reorderedContent = '';
+      for (const blockName of order) {
+        if (blocks[blockName]) {
+          reorderedContent += blocks[blockName];
+        }
+      }
+      
+      // Replace the entire reorder container with the reordered content
+      const reorderContainerRegex = /<!--\s*REORDER\s*-->([\s\S]*?)<!--\s*ENDREORDER\s*-->/g;
+      workingTemplate = workingTemplate.replace(reorderContainerRegex, (_fullMatch, _containerContent) => {
+        return reorderedContent;
+      });
+    }
+    
+    // Replace individual block markers with their (potentially modified) content
+    for (const [blockName, blockContent] of Object.entries(blocks)) {
+      const blockMarkerRegex = new RegExp(`<!--\\s*BLOCK:${blockName}\\s*-->[\\s\\S]*?<!--\\s*ENDBLOCK:${blockName}\\s*-->`, 'g');
+      workingTemplate = workingTemplate.replace(blockMarkerRegex, blockContent);
+    }
+    
+    return workingTemplate;
+  }
+  
+  /**
+   * Export the processed template to different formats
+   * @param template - The processed HTML template
+   * @param format - The desired output format
+   * @param _options - Export options (not used in this basic implementation)
+   * @returns The exported content
+   */
+  public export(template: string, format: 'html' | 'markdown' | 'text' | 'json' | 'ast', _options?: any): string | object {
+    switch (format) {
+      case 'html':
+        return template;
+      case 'markdown':
+        return this.htmlToMarkdown(template);
+      case 'text':
+        return this.htmlToText(template);
+      case 'json':
+      case 'ast':
+        // Export as structured data representation of the HTML
+        return this.htmlToStructuredData(template);
+      default:
+        throw new Error(`Unsupported export format: ${format}`);
+    }
+  }
+  
+  /**
+   * Convert HTML to a structured JSON representation
+   * This can be useful for conversion to other formats like React components for PDF generation
+   * @param html - The HTML string to convert
+   * @returns Structured representation as JSON object
+   */
+  private htmlToStructuredData(html: string): object {
+    // Parse HTML to a structured format that can be converted to React components
+    // This creates a simple AST representation
+    return this.parseHtmlToAst(html);
+  }
+  
+  /**
+   * Parse HTML string to an Abstract Syntax Tree (AST)
+   * @param html - HTML string to parse
+   * @returns AST representation of the HTML
+   */
+  private parseHtmlToAst(html: string): any {
+    // Simple HTML parser to create a basic AST
+    // This would be more sophisticated in a full implementation
+    
+    // Remove comments and extract basic structure
+    let cleanedHtml = html.replace(/<!--[\s\S]*?-->/g, '');
+    
+    // This is a simplified parser - in a real implementation, 
+    // you'd want to use a proper HTML parser library
+    const ast = this.simpleHtmlParse(cleanedHtml);
+    
+    return {
+      type: 'ast',
+      nodes: ast,
+      timestamp: new Date().toISOString()
+    };
+  }
+  
+  /**
+   * Simple HTML parser to convert string to basic AST structure
+   * @param html - HTML string to parse
+   * @returns Array of node objects
+   */
+  private simpleHtmlParse(html: string): any[] {
+    // This is a very basic parser - a production version would be much more robust
+    const nodes: any[] = [];
+    
+    // Very simple approach: extract elements and their content
+    const elementRegex = /<([a-zA-Z][a-zA-Z0-9-]*)\s*([^>]*?)>([\s\S]*?)<\/\1>|<([a-zA-Z][a-zA-Z0-9-]*)\s*([^>]*?)\s*\/?>/g;
+    let lastIndex = 0;
+    let match;
+    
+    while ((match = elementRegex.exec(html)) !== null) {
+      // Add text node for content before this element
+      if (match.index > lastIndex) {
+        const textContent = html.substring(lastIndex, match.index).trim();
+        if (textContent) {
+          nodes.push({
+            type: 'text',
+            content: textContent
+          });
+        }
+      }
+      
+      // Process the matched element
+      if (match[1]) { // Opening/closing tag
+        const elementName = match[1];
+        const attributesString = match[2];
+        const innerContent = match[3];
+        
+        nodes.push({
+          type: 'element',
+          tagName: elementName,
+          attributes: this.parseAttributes(attributesString),
+          children: innerContent.includes('<') ? this.simpleHtmlParse(innerContent) : [
+            { type: 'text', content: innerContent }
+          ]
+        });
+      } else if (match[4]) { // Self-closing tag
+        const elementName = match[4];
+        const attributesString = match[5];
+        
+        nodes.push({
+          type: 'element',
+          tagName: elementName,
+          attributes: this.parseAttributes(attributesString),
+          children: []
+        });
+      }
+      
+      lastIndex = match.index + match[0].length;
+    }
+    
+    // Add any remaining text
+    if (lastIndex < html.length) {
+      const remainingText = html.substring(lastIndex).trim();
+      if (remainingText) {
+        nodes.push({
+          type: 'text',
+          content: remainingText
+        });
+      }
+    }
+    
+    return nodes;
+  }
+  
+  /**
+   * Parse attribute string to key-value pairs
+   * @param attrString - String containing attributes
+   * @returns Object with attribute key-value pairs
+   */
+  private parseAttributes(attrString: string): Record<string, string> {
+    const attrs: Record<string, string> = {};
+    if (!attrString.trim()) return attrs;
+    
+    // Simple attribute parsing (would be more robust in production)
+    const attrRegex = /([a-zA-Z0-9-]+)=["']([^"']*)["']/g;
+    let attrMatch;
+    
+    while ((attrMatch = attrRegex.exec(attrString)) !== null) {
+      attrs[attrMatch[1]] = attrMatch[2];
+    }
+    
+    return attrs;
+  }
+  
+  /**
+   * Get supported export formats
+   * @returns Array of supported export formats
+   */
+  public getSupportedExportFormats(): string[] {
+    return ['html', 'markdown', 'text', 'json', 'ast'];
+  }
+  
+  /**
+   * Convert HTML to Markdown
+   * @param html - The HTML string to convert
+   * @returns The Markdown string
+   */
+  private htmlToMarkdown(html: string): string {
+    // Basic HTML to Markdown conversion
+    return html
+      // Headers
+      .replace(/<h1[^>]*>(.*?)<\/h1>/gi, '# $1')
+      .replace(/<h2[^>]*>(.*?)<\/h2>/gi, '## $1')
+      .replace(/<h3[^>]*>(.*?)<\/h3>/gi, '### $1')
+      // Paragraphs
+      .replace(/<p[^>]*>(.*?)<\/p>/gi, '$1\n\n')
+      // Lists
+      .replace(/<ul[^>]*>/gi, '')  // Remove opening <ul>
+      .replace(/<\/ul>/gi, '\n')   // Close <ul> with newline
+      .replace(/<li[^>]*>(.*?)<\/li>/gi, '- $1\n')
+      // Bold/Strong
+      .replace(/<strong[^>]*>(.*?)<\/strong>/gi, '**$1**')
+      .replace(/<b[^>]*>(.*?)<\/b>/gi, '**$1**')
+      // Italic/Emphasis
+      .replace(/<em[^>]*>(.*?)<\/em>/gi, '*$1*')
+      .replace(/<i[^>]*>(.*?)<\/i>/gi, '*$1*')
+      // Links
+      .replace(/<a[^>]+href=["']([^"']*)["'][^>]*>(.*?)<\/a>/gi, '[$2]($1)')
+      // Images
+      .replace(/<img[^>]+src=["']([^"']*)["'][^>]*alt=["']([^"']*)["'][^>]*\/?>/gi, '![$2]($1)')
+      // Clean up extra spaces and newlines
+      .replace(/\n\s*\n\s*\n/g, '\n\n');
+  }
+  
+  /**
+   * Convert HTML to plain text
+   * @param html - The HTML string to convert
+   * @returns The plain text string
+   */
+  private htmlToText(html: string): string {
+    return html
+      // Remove all tags
+      .replace(/<[^>]*>/g, '')
+      // Normalize whitespace
+      .replace(/\s+/g, ' ')
+      .trim();
   }
 }
