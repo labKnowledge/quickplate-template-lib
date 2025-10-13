@@ -13,11 +13,13 @@ npm install quickplate-template
 ### Alternative installation methods:
 
 **Via yarn:**
+
 ```bash
 yarn add quickplate-template
 ```
 
 **Direct from GitHub:**
+
 ```bash
 npm install git+https://github.com/yourusername/quickplate.git
 ```
@@ -26,7 +28,7 @@ npm install git+https://github.com/yourusername/quickplate.git
 
 - **Generic Template Support**: Works with any HTML template structure
 - **Placeholder Replacement**: Replace `{key}` placeholders with data values
-- **Loop Processing**: Process arrays with `{LOOP_START:name}...{LOOP_END:name}` syntax  
+- **Loop Processing**: Process arrays with `{LOOP_START:name}...{LOOP_END:name}` syntax
 - **Conditional Sections**: Automatically remove empty sections based on data availability
 - **Special Field Processing**: Enhanced handling for specific fields like `stars` and `addContact`
 - **Layout Reordering**: Dynamically reorder template sections using `<!-- BLOCK:name -->...<!-- ENDBLOCK:name -->` and `layoutOrder` data property
@@ -43,13 +45,13 @@ npm install git+https://github.com/yourusername/quickplate.git
 ## Installation
 
 ```bash
-npm install @quickplate/template
+npm install quickplate-template
 ```
 
 ## Quick Start
 
 ```typescript
-import { TemplateProcessor } from '@quickplate/template';
+import { TemplateProcessor } from 'quickplate-template';
 
 // Create a processor instance
 const processor = new TemplateProcessor();
@@ -59,7 +61,7 @@ const template = `
   <div class="profile">
     <h1>{firstName} {lastName}</h1>
     <p>Email: {email}</p>
-    
+  
     <!-- Reviews section -->
     <div class="reviews">
       {LOOP_START:reviews}
@@ -93,8 +95,9 @@ console.log(result);
 ## Documentation
 
 For complete documentation, visit:
+
 - [Getting Started](./docs/getting-started.md)
-- [Installation](./docs/installation.md) 
+- [Installation](./docs/installation.md)
 - [Core Concepts](./docs/core-concepts.md)
 - [API Reference](./docs/api-reference.md)
 - [Advanced Features](./docs/advanced-features.md)
@@ -106,12 +109,16 @@ For complete documentation, visit:
 The library provides special handling for specific fields:
 
 ### stars
+
 Converts numeric values to 5-star rating display:
+
 - `{stars: 4}` becomes `★★★★☆`
 - `{stars: 2}` becomes `★★☆☆☆`
 
 ### addContact
+
 Automatically adds vCard prefix for contact information:
+
 - `{addContact: 'VCARD_DATA'}` becomes `data:text/vcard;charset=utf-8,ENCODED_VCARD_DATA`
 
 ## Compatibility
