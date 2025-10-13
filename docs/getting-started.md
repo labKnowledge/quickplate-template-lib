@@ -12,7 +12,7 @@ This guide will walk you through the basics of using the QuickPlate Template Lib
 Let's start with a simple example that demonstrates basic placeholder replacement:
 
 ```typescript
-import { TemplateProcessor } from '@quickplate/template';
+import { TemplateProcessor } from 'quickplate-template';
 
 // Create a processor instance
 const processor = new TemplateProcessor();

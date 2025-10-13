@@ -7,7 +7,7 @@ Practical examples demonstrating how to use the QuickPlate Template Library in v
 A simple template with basic placeholders:
 
 ```typescript
-import { TemplateProcessor } from '@quickplate/template';
+import { TemplateProcessor } from 'quickplate-template';
 
 const processor = new TemplateProcessor();
 
@@ -35,7 +35,7 @@ console.log(result);
 Processing arrays of data:
 
 ```typescript
-import { TemplateProcessor } from '@quickplate/template';
+import { TemplateProcessor } from 'quickplate-template';
 
 const processor = new TemplateProcessor();
 
@@ -71,7 +71,7 @@ console.log(result);
 Using conditional sections to show/hide content:
 
 ```typescript
-import { TemplateProcessor } from '@quickplate/template';
+import { TemplateProcessor } from 'quickplate-template';
 
 const processor = new TemplateProcessor();
 
@@ -126,7 +126,7 @@ console.log(result);
 Using special field processing:
 
 ```typescript
-import { TemplateProcessor } from '@quickplate/template';
+import { TemplateProcessor } from 'quickplate-template';
 
 const processor = new TemplateProcessor();
 
@@ -157,7 +157,7 @@ console.log(result);
 A complete business card template combining all features:
 
 ```typescript
-import { TemplateProcessor } from '@quickplate/template';
+import { TemplateProcessor } from 'quickplate-template';
 
 const processor = new TemplateProcessor();
 
@@ -271,7 +271,7 @@ console.log(result);
 Using custom delimiters to avoid conflicts:
 
 ```typescript
-import { TemplateProcessor } from '@quickplate/template';
+import { TemplateProcessor } from 'quickplate-template';
 
 const processor = new TemplateProcessor({
   delimiters: ['{{', '}}']  // Using double curly braces

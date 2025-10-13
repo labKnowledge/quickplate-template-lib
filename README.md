@@ -2,6 +2,26 @@
 
 QuickPlate Template Library is a flexible HTML templating solution that allows developers to create dynamic HTML from templates using placeholder replacement, loops, and conditional sections. The library is designed to work with generic templates regardless of their structure, making it ideal for use in applications where the template format is unknown ahead of time.
 
+## Installation
+
+```bash
+npm install quickplate-template
+```
+
+> **Note**: The package is published as `quickplate-template` due to npm naming requirements, but contains all the powerful QuickPlate templating features.
+
+### Alternative installation methods:
+
+**Via yarn:**
+```bash
+yarn add quickplate-template
+```
+
+**Direct from GitHub:**
+```bash
+npm install git+https://github.com/yourusername/quickplate.git
+```
+
 ## Features
 
 - **Generic Template Support**: Works with any HTML template structure

@@ -5,7 +5,7 @@ The QuickPlate Template Library now supports AST (Abstract Syntax Tree) export, 
 ## Basic Usage
 
 ```javascript
-import { TemplateProcessor } from '@quickplate/template';
+import { TemplateProcessor } from 'quickplate-template';
 
 const processor = new TemplateProcessor();
 
@@ -63,7 +63,7 @@ const reactElement = astToReact(ast.nodes[0]); // Assuming single root
 
 ```javascript
 // pages/profile.js
-import { TemplateProcessor } from '@quickplate/template';
+import { TemplateProcessor } from 'quickplate-template';
 import { useState, useEffect } from 'react';
 
 export default function ProfilePage() {
@@ -141,7 +141,7 @@ function formatAttributes(attrs) {
 For your @react-pdf/renderer use case:
 
 ```javascript
-import { TemplateProcessor } from '@quickplate/template';
+import { TemplateProcessor } from 'quickplate-template';
 import { Document, Page, Text, View } from '@react-pdf/renderer';
 
 // Process your template
