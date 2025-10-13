@@ -1183,4 +1183,60 @@ export class TemplateProcessor {
            !content.match(/^(and|or|the|a|an|in|on|at|to|for|of|with|by|is|are|was|were|this|that|these|those|but|as|if|when|html|body|div|span|p|a|ul|ol|li|section|article|header|footer)$/i) && // not common words or HTML elements
            content.split(/\s+/).length <= 10; // not a long paragraph
   }
+  
+  /**
+   * Apply CSS scoping to isolate template styles
+   * @param html - The HTML template to scope
+   * @param scopeClass - The class to use for scoping (e.g., 'charleyTemplate')
+   * @returns HTML with scoped CSS
+   */
+  public applyCssScoping(html: string, scopeClass: string): string {
+    // Parse the HTML to extract and scope the CSS
+    const styleRegex = /(<style[^>]*>)([\s\S]*?)(<\/style>)/gi;
+    
+    return html.replace(styleRegex, (_match: string, opening: string, cssContent: string, closing: string) => {
+      const scopedCss = this.scopeCss(cssContent, scopeClass);
+      return opening + scopedCss + closing;
+    });
+  }
+  
+  /**
+   * Scope CSS rules by prepending the scope class
+   * @param css - The CSS content to scope
+   * @param scopeClass - The class to use for scoping
+   * @returns Scoped CSS
+   */
+  private scopeCss(css: string, scopeClass: string): string {
+    // Remove comments first
+    let processedCss = css.replace(/\/\*[\s\S]*?\*\//g, '');
+    
+    // Simple approach for demonstration - a full implementation would be much more complex
+    // This approach prepends the scope class to common selectors
+    
+    // Scope body and html elements
+    processedCss = processedCss.replace(/(^|\}|\s)(html|body)\s*(\{)/g, (match, before, element, after) => {
+      if (match.includes(`.${scopeClass}`)) return match;
+      return `${before}.${scopeClass} ${element}${after}`;
+    });
+    
+    // Scope common element selectors
+    processedCss = processedCss.replace(/(;|\{|\})\s*(div|p|a|h1|h2|h3|h4|h5|h6|span|ul|ol|li|img|table|tr|td|th|form|input|button|hr)\s*(\{)/g, (match, before, element, after) => {
+      if (match.includes(`.${scopeClass}`)) return match;
+      return `${before}.${scopeClass} ${element}${after}`;
+    });
+    
+    // Scope class selectors
+    processedCss = processedCss.replace(/(^|\}|\s)(\.[a-zA-Z][a-zA-Z0-9_-]*)\s*(\{)/g, (match, before, className, after) => {
+      if (className.substring(1) === scopeClass || match.includes(`.${scopeClass}`)) return match;
+      return `${before}.${scopeClass} ${className}${after}`;
+    });
+    
+    // Scope ID selectors
+    processedCss = processedCss.replace(/(^|\}|\s)(#[a-zA-Z][a-zA-Z0-9_-]*)\s*(\{)/g, (match, before, idName, after) => {
+      if (match.includes(`.${scopeClass}`)) return match;
+      return `${before}.${scopeClass} ${idName}${after}`;
+    });
+    
+    return processedCss;
+  }
 }
