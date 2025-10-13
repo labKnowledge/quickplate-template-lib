@@ -1,6 +1,6 @@
 {
   "name": "quickplate-template",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "A powerful HTML templating library for generating dynamic HTML from templates",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
