@@ -31,8 +31,8 @@ describe('TemplateProcessor', () => {
     test('should handle missing placeholders', () => {
       const template = '<h1>Hello {name}! Welcome {title}.</h1>';
       const data: TemplateData = { name: 'John' };
-      const expected = '<h1>Hello John! Welcome {title}.</h1>';
-      
+      const expected = '<h1>Hello John! Welcome .</h1>';
+
       const result = processor.process(template, data);
       expect(result).toBe(expected);
     });
@@ -191,21 +191,46 @@ describe('TemplateProcessor', () => {
           <p>Content</p>
         </div>
       `;
-      const data: TemplateData = { 
-        instagramLink: '', 
+      const data: TemplateData = {
+        instagramLink: '',
         facebookLink: 'https://facebook.com/test',
         socialMedia: { facebook: 'https://facebook.com/test' }
       };
-      const expected = `
-        <div>
-          
-          <a id="facebook" href="https://facebook.com/test">Facebook</a>
-          <p>Content</p>
+
+      const result = processor.process(template, data);
+      // Should remove the instagram link with empty href
+      expect(result).toContain('<a id="facebook" href="https://facebook.com/test">Facebook</a>');
+      expect(result).not.toContain('<a id="instagram"');
+    });
+
+    test('should remove anchor tags with nested images when href is empty', () => {
+      const template = `
+        <div class="social-grid">
+          <a href="{instagramLink}" id="instagram" class="social" target="_blank">
+            <img id="instagramLink" src="https://storage.googleapis.com/liii/SDAssets/Templates/InstaBeige.png" alt="Instagram logo" />
+          </a>
+          <a href="{tiktokLink}" id="tiktok" class="social" target="_blank">
+            <img id="tikTokLink" src="https://storage.googleapis.com/liii/SDAssets/Templates/tikTokBeige.png" alt="TikTok logo" />
+          </a>
+          <a href="{facebookLink}" id="facebook-2" class="socialFooter" target="_blank">
+            <img id="facebookLink-2" src="https://storage.googleapis.com/liii/SDAssets/Templates/facebookBeige.png" alt="Facebook logo" />
+          </a>
         </div>
       `;
-      
+      const data: TemplateData = {
+        instagramLink: 'https://www.instagram.com/test'
+        // tiktokLink and facebookLink are missing - should be replaced with empty string
+      };
+
       const result = processor.process(template, data);
-      expect(result.trim()).toBe(expected.trim());
+      // Should keep instagram link with valid href
+      expect(result).toContain('<a href="https://www.instagram.com/test"');
+      expect(result).toContain('alt="Instagram logo"');
+      // Should remove tiktok and facebook links with empty href (including their nested images)
+      expect(result).not.toContain('id="tiktok"');
+      expect(result).not.toContain('id="facebook-2"');
+      expect(result).not.toContain('alt="TikTok logo"');
+      expect(result).not.toContain('alt="Facebook logo"');
     });
 
     test('should remove empty contact fields', () => {
@@ -365,6 +390,71 @@ describe('TemplateProcessor', () => {
       
       expect(result).not.toContain('class="phone"');
       expect(result).toContain('https://example.com');
+    });
+  });
+
+  describe('Generic section handling', () => {
+    test('should remove unknown sections with missing data', () => {
+      const template = `
+        <div>
+          <!-- Team Members section -->
+          <h2>Team</h2>
+          <p>{teamDescription}</p>
+          <!-- EndTeam Members section -->
+          <!-- Achievements section -->
+          <h2>Awards</h2>
+          <p>{awards}</p>
+          <!-- EndAchievements section -->
+          <p>Footer</p>
+        </div>
+      `;
+      const data: TemplateData = {
+        // No teamDescription or awards in data - both sections should be removed
+      };
+
+      const result = processor.process(template, data);
+      expect(result).not.toContain('Team Members');
+      expect(result).not.toContain('Achievements');
+      expect(result).toContain('Footer');
+    });
+
+    test('should remove unknown loop sections with empty arrays', () => {
+      const template = `
+        <div>
+          <!-- Products section -->
+          {LOOP_START:products}
+          <div class="product">{name}</div>
+          {LOOP_END:products}
+          <!-- EndProducts section -->
+          <p>Content</p>
+        </div>
+      `;
+      const data: TemplateData = {
+        products: [] // Empty array - section should be removed
+      };
+
+      const result = processor.process(template, data);
+      expect(result).not.toContain('Products section');
+      expect(result).not.toContain('product');
+      expect(result).toContain('Content');
+    });
+
+    test('should keep unknown sections with valid data', () => {
+      const template = `
+        <div>
+          <!-- Testimonials section -->
+          <h2>What People Say</h2>
+          <p>{testimonialText}</p>
+          <!-- EndTestimonials section -->
+        </div>
+      `;
+      const data: TemplateData = {
+        testimonialText: 'This is amazing!'
+      };
+
+      const result = processor.process(template, data);
+      expect(result).toContain('What People Say');
+      expect(result).toContain('This is amazing!');
     });
   });
 

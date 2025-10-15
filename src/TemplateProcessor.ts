@@ -499,12 +499,20 @@ export class TemplateProcessor {
    * @returns The cleaned template string
    */
   private cleanupTemplate(template: string): string {
+    let result = template;
+
+    // Remove anchor tags with empty href attributes
+    result = result.replace(/<a[^>]*href=["'](\s*)["'][^>]*>[\s\S]*?<\/a>/gi, '');
+
+    // Remove elements with empty src attributes (like images)
+    result = result.replace(/<img[^>]*src=["'](\s*)["'][^>]*\/?>/gi, '');
+
     // Clean up multiple consecutive empty lines and whitespace
-    let result = template.replace(/\n\s*\n\s*\n/g, '\n\n');
-    
+    result = result.replace(/\n\s*\n\s*\n/g, '\n\n');
+
     // Remove excessive whitespace at the end
     result = result.replace(/\s+$/, '');
-    
+
     return result;
   }
   
