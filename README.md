@@ -21,7 +21,7 @@ yarn add quickplate-template
 **Direct from GitHub:**
 
 ```bash
-npm install git+https://github.com/yourusername/quickplate.git
+npm install git+https://github.com/labKnowledge/quickplate.git
 ```
 
 ## Features
