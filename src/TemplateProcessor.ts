@@ -106,8 +106,8 @@ export class TemplateProcessor {
         // Handle special cases like addContact and stars
         return this.processSpecialPlaceholder(data[placeholder], placeholder);
       } else {
-        // If the placeholder doesn't exist in data, return the original placeholder
-        return match;
+        // If the placeholder doesn't exist in data, replace with empty string
+        return '';
       }
     });
   }
@@ -219,7 +219,7 @@ export class TemplateProcessor {
         // Handle special placeholders (addContact, stars, etc.)
         return this.processSpecialPlaceholder(globalData[placeholder], placeholder);
       } else {
-        return match;
+        return '';
       }
     });
   }
