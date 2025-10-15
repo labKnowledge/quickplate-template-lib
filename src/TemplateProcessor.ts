@@ -101,7 +101,7 @@ export class TemplateProcessor {
     // Create a regex to find all placeholders like {firstName}, {lastName}, etc.
     const regex = new RegExp(`${openDelim}([\\w\\d_-]+)${closeDelim}`, 'g');
     
-    return template.replace(regex, (match, placeholder) => {
+    return template.replace(regex, (_match, placeholder) => {
       if (data.hasOwnProperty(placeholder)) {
         // Handle special cases like addContact and stars
         return this.processSpecialPlaceholder(data[placeholder], placeholder);
@@ -203,7 +203,7 @@ export class TemplateProcessor {
     const [openDelim, closeDelim] = this.options.delimiters;
     const placeholderRegex = new RegExp(`${openDelim}([\\w\\d_-]+)${closeDelim}`, 'g');
     
-    return itemTemplate.replace(placeholderRegex, (match, placeholder) => {
+    return itemTemplate.replace(placeholderRegex, (_match, placeholder) => {
       if (item.hasOwnProperty(placeholder)) {
         // Handle special cases like image URLs
         if (placeholder.endsWith('Url') || placeholder.includes('image') || placeholder.includes('photo')) {
